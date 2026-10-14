@@ -1,11 +1,14 @@
 """Run with `streamlit run app.py`. Live requests are explicit and consent-gated."""
 import hashlib
-import os
 import streamlit as st
 from openai import OpenAI
+from linguabridge.config import read_setting
 from linguabridge.service import LANGUAGES, Result, WorkflowError, demo_result, transcribe, translate
 
 st.set_page_config(page_title="LinguaBridge AI", page_icon="🌐", layout="wide")
+api_key = read_setting("OPENAI_API_KEY", secrets_get=st.secrets.get)
+transcription_model = read_setting("OPENAI_TRANSCRIPTION_MODEL", "whisper-1", st.secrets.get)
+translation_model = read_setting("OPENAI_TRANSLATION_MODEL", "gpt-4.1-mini", st.secrets.get)
 st.caption("LINGUABRIDGE AI  /  SPEECH → UNDERSTANDING")
 st.title("Speak freely. Connect across languages.")
 st.write("Record or upload audio, review the transcript, and translate it into your chosen language.")
@@ -25,7 +28,7 @@ if mode == "Live API":
     if file:
         st.audio(file)
     consent = st.checkbox("I have permission to process this audio and agree to send it and its transcript to OpenAI.")
-    if not os.getenv("OPENAI_API_KEY"):
+    if not api_key:
         st.warning("Live mode needs OPENAI_API_KEY configured on the server. No key is needed for Demo.")
 else:
     st.info("Sample workspace: the demo shows a fixed English transcript and prepared translations. No audio is processed.")
@@ -38,7 +41,7 @@ if st.session_state.get("fingerprint") != fingerprint:
     st.session_state.pop("result", None)
 
 if st.button("Load sample" if mode == "Demo" else "Transcribe audio", type="primary",
-             disabled=mode == "Live API" and (not file or not consent or not os.getenv("OPENAI_API_KEY"))):
+             disabled=mode == "Live API" and (not file or not consent or not api_key)):
     st.session_state.pop("result", None)
     try:
         if mode == "Demo":
@@ -46,9 +49,9 @@ if st.button("Load sample" if mode == "Demo" else "Transcribe audio", type="prim
             st.session_state.transcript = st.session_state.result.transcript
         else:
             with st.spinner("Transcribing audio…"):
-                client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=60.0, max_retries=1)
+                client = OpenAI(api_key=api_key, timeout=60.0, max_retries=1)
                 st.session_state.transcript = transcribe(client, file.name, data, source,
-                                                        os.getenv("OPENAI_TRANSCRIPTION_MODEL", "whisper-1"))
+                                                        transcription_model)
     except WorkflowError as exc:
         st.error(str(exc))
     except Exception:
@@ -64,9 +67,9 @@ if "transcript" in st.session_state:
         st.session_state.pop("result", None)
         try:
             with st.spinner("Translating…"):
-                client = OpenAI(api_key=os.environ["OPENAI_API_KEY"], timeout=60.0, max_retries=1)
+                client = OpenAI(api_key=api_key, timeout=60.0, max_retries=1)
                 translated = translate(client, st.session_state.transcript, target,
-                                       os.getenv("OPENAI_TRANSLATION_MODEL", "gpt-4.1-mini"))
+                                       translation_model)
                 st.session_state.result = Result(st.session_state.transcript, translated, source, target)
         except WorkflowError as exc:
             st.error(str(exc))

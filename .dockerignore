@@ -1,0 +1,10 @@
+.git
+.env*
+.streamlit/secrets.toml
+.venv
+__pycache__
+.pytest_cache
+tests
+*.wav
+*.mp3
+*.m4a

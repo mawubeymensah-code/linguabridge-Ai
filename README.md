@@ -31,7 +31,7 @@ Open the localhost URL printed by Streamlit. Choose **Demo**, a target language,
 
 ### Live API setup
 
-Supply `OPENAI_API_KEY` using your terminal's environment or your hosting service's secret manager. Do not type it into source code, commit it, paste it into issues, or expose it in a screenshot. `.env.example` documents variable names; this app intentionally does not auto-load `.env` files.
+Supply `OPENAI_API_KEY` using your terminal's environment or your hosting service's secret manager. Do not type it into source code, commit it, paste it into issues, or expose it in a screenshot. `.env.example` documents variable names; this app does not auto-load `.env` files. Hosted Streamlit secrets are also supported.
 
 Optional server variables:
 
@@ -59,10 +59,17 @@ Tests use mocked provider responses and Streamlit AppTest; they do not require a
 
 The local service/interface test suite passed. **Live transcription and translation have not been exercised against a real account** because no API key was supplied. Browser microphone permissions require localhost or HTTPS. This version has no streaming transcription, speaker diarization, audio chunking, persisted history, or authentication. Extension/size validation is not a full audio decoder; corrupt or silent files can be rejected by the provider. AI transcription/translation may be inaccurate. Use short recordings and review all output.
 
-Dependencies are pinned to the versions used locally. GitHub Actions runs the test suite on pushes and pull requests. Real API calls remain unverified until a server-side key is configured.
+Dependencies are pinned to the versions used locally. CI is configured but has not run on GitHub while repository access is unavailable.
 
 ## Official references
 
 - [OpenAI file transcription](https://developers.openai.com/api/docs/guides/speech-to-text)
 - [OpenAI text generation](https://developers.openai.com/api/docs/guides/text)
 - [Streamlit audio input](https://docs.streamlit.io/develop/api-reference/widgets/st.audio_input)
+
+
+## Deploy on Streamlit Community Cloud
+
+Connect your GitHub account at https://share.streamlit.io, choose this repository and branch main, and set the entrypoint to app.py. In Advanced settings, store OPENAI_API_KEY in the Secrets editor; never commit secrets.toml. The app reads server environment variables first and hosted Streamlit secrets second. Optional transcription and translation model names use the same settings. Deploy without a key to test Demo first.
+
+A Dockerfile is supplied for Python container hosts. Set credentials through the host secret manager, serve HTTPS, and forward the service's port 8501. The image runs as a non-root user and checks Streamlit health. Docker image build was not verified because Docker is unavailable in the authoring environment. The application has not yet been deployed to a Python host or tested with a live API key.
